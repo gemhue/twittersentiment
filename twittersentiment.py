@@ -1,0 +1,57 @@
+import subprocess
+import sys
+
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+install(text-preprocessing)
+install(tweet-preprocessor)
+install(textblob)
+
+import tweepy as tw
+import nltk
+from nltk.probability import FreqDist
+from nltk.tokenize import word_tokenize
+nltk.download('punkt')
+from text_preprocessing import preprocess_text,to_lower,remove_number,remove_punctuation,remove_stopword,lemmatize_word
+import preprocessor as p
+import textblob
+from textblob import TextBlob as tb
+
+apikey = input("What is your Twitter API Key? ")
+s_apikey = input("What is your Twitter Secret API Key? ")
+access = input("What is your Twitter API Access Token? ")
+s_access = input("What is your Twitter API Secret Access Token? ")
+
+auth = tw.OAuthHandler(apikey, s_apikey)
+auth.set_access_token(access, s_access)
+api = tw.API(auth, wait_on_rate_limit=True)
+
+search_term = input("What would you like to search on Twitter? ")
+search_results = tw.Cursor(api.search,q=search_term,lang="en").items(1000)
+
+raw_tweets = [tweet.text for tweet in search_results]
+
+pfuncts = [to_lower,remove_number,remove_punctuation,remove_stopword,lemmatize_word]
+clean1 = p.clean(str(raw_tweets))
+clean2 = preprocess_text(clean1,pfuncts)
+tokens = word_tokenize(clean2)
+
+tokenblob = tb(str(tokens))
+tokensent = tokenblob.sentiment.polarity
+
+print("Results")
+
+print("Corpus Size: " + str(len(tokens)))
+if tokensent > 0: 
+  print("Sentiment Score: " + str(tokensent) + " (Positive)\n")
+elif tokensent == 0: 
+  print("Sentiment Score: " + str(tokensent) + " (Neutral)\n")
+else: 
+  print("Sentiment Score: " + str(tokensent) + " (Negative)\n")
+
+fq_tokens = FreqDist(tokens)
+mc_tokens = fq_tokens.most_common(50)
+print("Most Common Words: ")
+for token in mc_tokens:
+  print(token)
